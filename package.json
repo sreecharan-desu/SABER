@@ -30,6 +30,7 @@
     "zod": "^4.3.5"
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.2.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/helmet": "^0.0.48",
@@ -45,5 +46,8 @@
     "prisma": "^6.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
+    },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   }
 }
