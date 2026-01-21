@@ -77,7 +77,7 @@ export const getRecruiterFeed = async (req: Request, res: Response, next: NextFu
 
    try {
        const userId = req.user?.id as string;
-       // Get my jobs
+       
        const myJobs = await prisma.job.findMany({
            where: { company: { recruiter_id: userId }, active: true },
            select: { id: true, constraints_json: true, skills_required: true }
@@ -87,53 +87,49 @@ export const getRecruiterFeed = async (req: Request, res: Response, next: NextFu
        
        const myJobIds = myJobs.map(j => j.id);
 
-       // Find candidates not swiped by me for these jobs
-       // ... This gets complex because Swipe is unique on [user_id, job_id, target_user_id]
-       // Actually Swipe model has `user_id` (actor) and `job_id`. 
-       // For Recruiter swipe: Actor=Recruiter, Job=Job, Target=Candidate.
-       
+       // Fetch candidates
        const candidates = await prisma.user.findMany({
-           where: {
-               role: 'candidate',
-               // Exclude if I have swiped them for specific job?
-               // Let's do a simple fetch and filter in memory for prototype speed. 
-               // In production, complex query.
-           },
+           where: { role: 'candidate' },
            include: { skills: true }
        });
+
+       // Fetch my swipes to filter out
+       const mySwipes = await prisma.swipe.findMany({
+           where: { user_id: userId, job_id: { in: myJobIds } },
+           select: { job_id: true, target_user_id: true } as any
+       });
        
-       // FilterCandidates
-       // Return structure: { candidate, for_job_id }?
-       // Let's return candidates and let frontend decide or just valid candidates.
-       
+       const swipedKeys = new Set(mySwipes.map((s: any) => `${s.job_id}:${s.target_user_id}`));
+
        const feed = [];
        for (const candidate of candidates) {
-            for (const job of myJobs) {
-                 // Check if swiped already
-                 const alreadySwiped = await prisma.swipe.count({
-                     where: {
-                         user_id: userId,
-                         job_id: job.id,
-                         target_user_id: candidate.id
-                     }
-                 });
-                 if (alreadySwiped > 0) continue;
+            const userConstraints = (candidate.constraints_json as Record<string, any>) || {};
 
-                 // Check constraints (Soft or Hard? Spec says "Hard constraints block exposure")
-                 // Check Job constraints vs User Constraints
-                 // ... (implementation constraint check same as candidate feed)
+            for (const job of myJobs) {
+                 if (swipedKeys.has(`${job.id}:${candidate.id}`)) continue;
+
+                 // Hard Constraints Check: Job vs Candidate
+                 const jobConstraints = (job.constraints_json as Record<string, any>) || {};
+                 let mismatch = false;
                  
+                 // If seeker has constraint X, job must satisfy X.
+                 for (const key in userConstraints) {
+                     if (jobConstraints[key] !== undefined && jobConstraints[key] !== userConstraints[key]) {
+                         mismatch = true;
+                         break;
+                     }
+                 }
+                 if (mismatch) continue;
+
                  feed.push({
                      candidate_id: candidate.id,
                      intent_text: candidate.intent_text,
                      skills: candidate.skills,
-                     // Constraints?
                      relevant_job_id: job.id
                  });
             }
        }
        
-       // Dedupe or limit?
        res.json(feed.slice(0, 50));
    } catch(err) {
        next(err);
@@ -157,7 +153,7 @@ export const recruiterSwipe = async (req: Request, res: Response, next: NextFunc
                      job_id,
                      target_user_id: candidate_id,
                      direction
-                 }
+                 } as any
              });
 
              if (direction === 'right') {
