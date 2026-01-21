@@ -21,6 +21,11 @@ app.use(express.urlencoded({ extended: true }));
 // Passport initialization
 app.use(passport.initialize());
 
+// Root route
+app.get('/', (req: Request, res: Response) => {
+  res.send('Hello World');
+});
+
 // Health Check
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
