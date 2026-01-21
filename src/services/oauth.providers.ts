@@ -1,23 +1,10 @@
 import axios from 'axios';
 import { OAuthProfile } from './user.service';
-
-interface TokenResponse {
-  access_token: string;
-}
-
-// Helper to get env vars safely
-const getEnv = (key: string) => {
-  let val = process.env[key];
-  if (!val && key.startsWith('GITHUB_')) {
-     val = process.env[`SABER_${key}`];
-  }
-  if (!val) throw new Error(`Missing env var: ${key}`);
-  return val;
-};
+import { config } from '../config/env';
 
 export const getGoogleProfile = async (code: string, redirectUri: string): Promise<OAuthProfile> => {
-  const clientId = getEnv('GOOGLE_CLIENT_ID');
-  const clientSecret = getEnv('GOOGLE_CLIENT_SECRET');
+  const clientId = config.google.clientId;
+  const clientSecret = config.google.clientSecret;
 
   const { data: tokenData } = await axios.post('https://oauth2.googleapis.com/token', {
     client_id: clientId,
@@ -42,8 +29,8 @@ export const getGoogleProfile = async (code: string, redirectUri: string): Promi
 };
 
 export const getGithubProfile = async (code: string, redirectUri: string): Promise<OAuthProfile> => {
-  const clientId = getEnv('GITHUB_CLIENT_ID');
-  const clientSecret = getEnv('GITHUB_CLIENT_SECRET');
+  const clientId = config.github.clientId;
+  const clientSecret = config.github.clientSecret;
 
   const { data: tokenData } = await axios.post(
     'https://github.com/login/oauth/access_token',
@@ -79,13 +66,14 @@ export const getGithubProfile = async (code: string, redirectUri: string): Promi
     email,
     displayName: user.name || user.login,
     photos: user.avatar_url ? [{ value: user.avatar_url }] : [],
+    accessToken,
     _raw: user,
   };
 };
 
 export const getLinkedinProfile = async (code: string, redirectUri: string): Promise<OAuthProfile> => {
-  const clientId = getEnv('LINKEDIN_CLIENT_ID');
-  const clientSecret = getEnv('LINKEDIN_CLIENT_SECRET');
+  const clientId = config.linkedin.clientId;
+  const clientSecret = config.linkedin.clientSecret;
 
   const params = new URLSearchParams();
   params.append('grant_type', 'authorization_code');

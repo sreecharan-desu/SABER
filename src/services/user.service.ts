@@ -7,6 +7,7 @@ export interface OAuthProfile {
   email: string | null;
   displayName: string;
   photos?: { value: string }[];
+  accessToken?: string; // Added to facilitate data extraction
   _raw?: string | object;
 }
 

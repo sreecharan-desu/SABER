@@ -4,8 +4,10 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import passport from 'passport';
+import { validateEnv } from './config/env';
 
 dotenv.config();
+validateEnv();
 
 const app = express();
 

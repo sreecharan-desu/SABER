@@ -20,7 +20,7 @@ const jobSchema = z.object({
 export const createCompany = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { name, website } = companySchema.parse(req.body);
-        const recruiterId = req.user?.id as string;
+        const recruiterId = (req.user as any)?.id;
         
         const company = await prisma.company.create({
             data: {
@@ -76,7 +76,7 @@ export const getRecruiterFeed = async (req: Request, res: Response, next: NextFu
     // Implementation: Candidates that are relevant to ANY of my active jobs and haven't been swiped yet.
 
    try {
-       const userId = req.user?.id as string;
+       const userId = (req.user as any)?.id;
        
        const myJobs = await prisma.job.findMany({
            where: { company: { recruiter_id: userId }, active: true },
@@ -144,7 +144,7 @@ export const recruiterSwipe = async (req: Request, res: Response, next: NextFunc
             direction: z.enum(['left', 'right'])
         });
         const { job_id, candidate_id, direction } = schema.parse(req.body);
-        const userId = req.user?.id as string; // Recruiter
+        const userId = (req.user as any)?.id; // Recruiter
 
         await prisma.$transaction(async (tx) => {
              await tx.swipe.create({

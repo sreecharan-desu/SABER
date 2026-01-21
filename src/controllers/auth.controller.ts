@@ -2,7 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import * as oauthProviders from '../services/oauth.providers';
 import * as userService from '../services/user.service';
+import * as githubDataService from '../services/github.data.service';
 import { generateToken } from '../utils/jwt';
+
+import { config } from '../config/env';
 
 const callbackSchema = z.object({
   provider: z.enum(['google', 'github', 'linkedin']),
@@ -13,7 +16,7 @@ const callbackSchema = z.object({
 export const handleOAuthCallback = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { provider, code, redirect_uri } = callbackSchema.parse(req.body);
-    const redirectUri = redirect_uri || process.env.BASE_URL + '/auth/callback'; // Fallback
+    const redirectUri = redirect_uri || `${config.baseUrl}/api/auth/oauth/callback`; 
 
     let profile;
     switch (provider) {
@@ -31,6 +34,12 @@ export const handleOAuthCallback = async (req: Request, res: Response, next: Nex
     }
 
     const user = await userService.findOrCreateUserConfirmingIdentity(profile);
+    
+    // Trigger GitHub data extraction in background if available
+    if (provider === 'github' && profile.accessToken) {
+      githubDataService.extractAndStoreGithubData(user.id, profile.accessToken);
+    }
+
     const token = generateToken({ id: user.id, role: user.role });
 
     res.json({ token, user });
@@ -44,7 +53,7 @@ export const linkProvider = async (req: Request, res: Response, next: NextFuncti
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
     const { provider, code, redirect_uri } = callbackSchema.parse(req.body);
-    const redirectUri = redirect_uri || process.env.BASE_URL + '/auth/callback';
+    const redirectUri = redirect_uri || `${config.baseUrl}/api/auth/oauth/callback`;
 
     let profile;
     switch (provider) {
@@ -63,7 +72,11 @@ export const linkProvider = async (req: Request, res: Response, next: NextFuncti
 
     await userService.linkOAuthCloudAccount((req.user as any)?.id, profile);
     
-    // Return updated user?
+    // Trigger GitHub data extraction in background if available
+    if (provider === 'github' && profile.accessToken) {
+      githubDataService.extractAndStoreGithubData((req.user as any).id, profile.accessToken);
+    }
+    
     res.json({ status: 'ok', message: 'Provider linked successfully' });
   } catch (error) {
     next(error);
