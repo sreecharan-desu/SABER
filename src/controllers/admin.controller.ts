@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../config/prisma';
 import logger from '../utils/logger';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID, createHash } from 'crypto';
 
 export const getMetrics = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -32,9 +32,8 @@ export const getMetrics = async (req: Request, res: Response, next: NextFunction
 
 export const rotateAIKeys = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const crypto = await import('crypto');
-        const newKey = `ai_sk_${uuidv4().replace(/-/g, '')}`; // Structured key format
-        const hash = crypto.createHash('sha256').update(newKey).digest('hex');
+        const newKey = `ai_sk_${randomUUID().replace(/-/g, '')}`; // Structured key format
+        const hash = createHash('sha256').update(newKey).digest('hex');
         
         const requesterId = (req.user as any)?.id || 'unknown';
 

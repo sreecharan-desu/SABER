@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import passport from 'passport';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { validateEnv } from './config/env';
 import { globalLimiter } from './middleware/rateLimit.middleware';
 import logger from './utils/logger';
@@ -20,7 +20,7 @@ app.use(cors());
 
 // Request ID Middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
-  req.headers['x-request-id'] = req.headers['x-request-id'] || uuidv4();
+  req.headers['x-request-id'] = req.headers['x-request-id'] || randomUUID();
   next();
 });
 
