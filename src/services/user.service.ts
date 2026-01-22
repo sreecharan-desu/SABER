@@ -20,7 +20,11 @@ export const findOrCreateUserConfirmingIdentity = async (profile: OAuthProfile) 
         provider_user_id: profile.id,
       },
     },
-    include: { user: true },
+    include: { 
+      user: {
+        include: { oauth_accounts: true }
+      }
+    },
   });
 
   if (existingAccount) {
@@ -35,6 +39,7 @@ export const findOrCreateUserConfirmingIdentity = async (profile: OAuthProfile) 
   if (profile.email) {
     const existingUser = await prisma.user.findUnique({
       where: { email: profile.email },
+      include: { oauth_accounts: true },
     });
 
     if (existingUser) {
@@ -47,7 +52,10 @@ export const findOrCreateUserConfirmingIdentity = async (profile: OAuthProfile) 
           raw_data_json: profile._raw ? (typeof profile._raw === 'string' ? JSON.parse(profile._raw) : profile._raw) : {},
         },
       });
-      return existingUser;
+      return prisma.user.findUniqueOrThrow({
+        where: { id: existingUser.id },
+        include: { oauth_accounts: true }
+      });
     }
   }
 
@@ -78,6 +86,7 @@ export const findOrCreateUserConfirmingIdentity = async (profile: OAuthProfile) 
         },
       },
     },
+    include: { oauth_accounts: true },
   });
 
   return newUser;

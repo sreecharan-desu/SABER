@@ -14,7 +14,10 @@ export const authenticateJWT = async (req: Request, res: Response, next: NextFun
         return res.status(403).json({ error: 'Invalid token payload' });
       }
 
-      const user = await prisma.user.findUnique({ where: { id: payload.id } });
+      const user = await prisma.user.findUnique({
+        where: { id: payload.id },
+        include: { oauth_accounts: true } 
+      });
       if (!user) {
         return res.status(403).json({ error: 'User not found' });
       }
