@@ -35,7 +35,7 @@ export const getMatches = async (req: Request, res: Response, next: NextFunction
 
     // Clean up response based on role? 
     // If Match is revealed, show full info.
-    res.json(matches);
+    res.json({ matches });
   } catch (err) {
     next(err);
   }

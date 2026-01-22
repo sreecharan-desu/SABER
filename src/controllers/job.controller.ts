@@ -75,7 +75,7 @@ export const getFeed = async (req: Request, res: Response, next: NextFunction) =
       // No company name, no logo
     }));
 
-    res.json(response);
+    res.json({ jobs: response });
   } catch (err) {
     next(err);
   }

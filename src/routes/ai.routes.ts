@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as aiController from '../controllers/ai.controller';
 import { requireAIKey } from '../middleware/auth.middleware';
+import { aiLimiter } from '../middleware/rateLimit.middleware';
 
 const router = Router();
 
@@ -8,6 +9,7 @@ const router = Router();
 // Spec says "API keys are scoped".
 // We apply requireAIKey to all sub-routes here.
 router.use(requireAIKey);
+router.use(aiLimiter);
 
 router.get('/data/users', aiController.getUsersData);
 router.get('/data/jobs', aiController.getJobsData);

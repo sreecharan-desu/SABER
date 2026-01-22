@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../config/prisma';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 
 const companySchema = z.object({
   name: z.string(),
@@ -83,7 +84,7 @@ export const getRecruiterFeed = async (req: Request, res: Response, next: NextFu
            select: { id: true, constraints_json: true, skills_required: true }
        });
        
-       if (myJobs.length === 0) return res.json([]);
+       if (myJobs.length === 0) return res.json({ candidates: [] });
        
        const myJobIds = myJobs.map(j => j.id);
 
@@ -130,7 +131,7 @@ export const getRecruiterFeed = async (req: Request, res: Response, next: NextFu
             }
        }
        
-       res.json(feed.slice(0, 50));
+       res.json({ candidates: feed.slice(0, 50) });
    } catch(err) {
        next(err);
    }
@@ -140,10 +141,11 @@ export const recruiterSwipe = async (req: Request, res: Response, next: NextFunc
     try {
         const schema = z.object({
             job_id: z.string(),
-            candidate_id: z.string(),
+            target_user_id: z.string(),
             direction: z.enum(['left', 'right'])
         });
-        const { job_id, candidate_id, direction } = schema.parse(req.body);
+        const { job_id, target_user_id, direction } = schema.parse(req.body);
+        const candidate_id = target_user_id;
         const userId = (req.user as any)?.id; // Recruiter
 
         await prisma.$transaction(async (tx) => {
@@ -182,6 +184,10 @@ export const recruiterSwipe = async (req: Request, res: Response, next: NextFunc
         
         res.json({ success: true });
     } catch(err) {
+        // Handle duplicate swipe error
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+            return res.status(400).json({ error: 'Already swiped on this candidate for this job' });
+        }
         next(err);
     }
 }

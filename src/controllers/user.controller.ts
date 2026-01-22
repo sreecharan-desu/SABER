@@ -7,9 +7,8 @@ const intentSchema = z.object({
   why_text: z.string(),
 });
 
-const constraintsSchema = z.object({
-  constraints_json: z.record(z.string(), z.any()), // Validate structure more strictly if possible
-});
+// Accept constraints directly in the body, not nested
+const constraintsSchema = z.record(z.string(), z.any());
 
 export const updateIntent = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -26,7 +25,7 @@ export const updateIntent = async (req: Request, res: Response, next: NextFuncti
 
 export const updateConstraints = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { constraints_json } = constraintsSchema.parse(req.body);
+    const constraints_json = constraintsSchema.parse(req.body);
     const user = await prisma.user.update({
       where: { id: (req.user as any)?.id },
       data: { constraints_json: constraints_json as any },

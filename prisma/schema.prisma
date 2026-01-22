@@ -40,6 +40,8 @@ model User {
   
   // Implicit relation to companies managed by this recruiter
   companies       Company[]
+
+  @@index([role])
 }
 
 model OAuthAccount {
@@ -51,6 +53,7 @@ model OAuthAccount {
   user              User     @relation(fields: [user_id], references: [id])
 
   @@unique([provider, provider_user_id])
+  @@index([user_id])
 }
 
 model Skill {
@@ -60,6 +63,8 @@ model Skill {
   source            String
   confidence_score  Float
   user              User     @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
 }
 
 model Company {
@@ -74,6 +79,8 @@ model Company {
   recruiter    User   @relation(fields: [recruiter_id], references: [id])
 
   jobs        Job[]
+
+  @@index([recruiter_id])
 }
 
 model Job {
@@ -91,6 +98,9 @@ model Job {
   company           Company  @relation(fields: [company_id], references: [id])
   swipes            Swipe[]
   matches           Match[]
+
+  @@index([company_id])
+  @@index([active])
 }
 
 model Swipe {
@@ -108,6 +118,8 @@ model Swipe {
   target_user    User?          @relation("SwipesAsTarget", fields: [target_user_id], references: [id])
 
   @@unique([user_id, job_id, target_user_id])
+  @@index([job_id])
+  @@index([target_user_id])
 }
 
 model Match {
@@ -121,6 +133,9 @@ model Match {
   candidate           User     @relation(fields: [candidate_id], references: [id])
   job                 Job      @relation(fields: [job_id], references: [id])
   messages            Message[]
+
+  @@index([candidate_id])
+  @@index([job_id])
 }
 
 model Message {
@@ -132,6 +147,9 @@ model Message {
 
   match       Match    @relation(fields: [match_id], references: [id])
   sender      User     @relation(fields: [sender_id], references: [id])
+
+  @@index([match_id])
+  @@index([sender_id])
 }
 
 model RecommendationProfile {

@@ -12,15 +12,20 @@ const recommendationUpdateSchema = z.object({
 
 export const getUsersData = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { since, until, limit, cursor } = req.query;
-        // ... Pagination logic impl
+        const limit = parseInt(req.query.limit as string) || 100;
+        const cursor = req.query.cursor as string | undefined;
+        
         const users = await prisma.user.findMany({
-            where: { role: 'candidate' }, // Filter by time if implemented
-            take: 100,
+            where: { role: 'candidate' },
+            take: limit,
+            skip: cursor ? 1 : 0,
+            cursor: cursor ? { id: cursor } : undefined,
+            orderBy: { id: 'asc' },
             include: { skills: true }
         });
         
-        // Transform to contract
+        const nextCursor = users.length === limit ? users[users.length - 1].id : null;
+
         const data = users.map(u => ({
              user_id: u.id,
              role: u.role,
@@ -32,15 +37,24 @@ export const getUsersData = async (req: Request, res: Response, next: NextFuncti
              updated_at: u.updated_at
         }));
         
-        res.json({ data, next_cursor: null });
+        res.json({ data, next_cursor: nextCursor });
     } catch(err) { next(err); }
 };
 
 export const getJobsData = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        const limit = parseInt(req.query.limit as string) || 100;
+        const cursor = req.query.cursor as string | undefined;
+
         const jobs = await prisma.job.findMany({ 
-            take: 100 
+            take: limit,
+            skip: cursor ? 1 : 0,
+            cursor: cursor ? { id: cursor } : undefined,
+            orderBy: { id: 'asc' } 
         });
+
+        const nextCursor = jobs.length === limit ? jobs[jobs.length - 1].id : null;
+
         const data = jobs.map(j => ({
             job_id: j.id,
             company_id: j.company_id,
@@ -51,13 +65,24 @@ export const getJobsData = async (req: Request, res: Response, next: NextFunctio
             active: j.active,
             created_at: j.created_at
         }));
-        res.json({ data, next_cursor: null });
+        res.json({ data, next_cursor: nextCursor });
     } catch(err) { next(err); }
 };
 
 export const getSwipesData = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const swipes = await prisma.swipe.findMany({ take: 100 });
+        const limit = parseInt(req.query.limit as string) || 100;
+        const cursor = req.query.cursor as string | undefined;
+
+        const swipes = await prisma.swipe.findMany({ 
+            take: limit,
+            skip: cursor ? 1 : 0,
+            cursor: cursor ? { id: cursor } : undefined,
+            orderBy: { id: 'asc' }
+        });
+
+        const nextCursor = swipes.length === limit ? swipes[swipes.length - 1].id : null;
+
         const data = swipes.map(s => ({
             swipe_id: s.id,
             user_id: s.user_id,
@@ -65,13 +90,24 @@ export const getSwipesData = async (req: Request, res: Response, next: NextFunct
             direction: s.direction,
             created_at: s.created_at
         }));
-        res.json({ data, next_cursor: null });
+        res.json({ data, next_cursor: nextCursor });
     } catch(err) { next(err); }
 };
 
 export const getMatchesData = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const matches = await prisma.match.findMany({ take: 100 });
+        const limit = parseInt(req.query.limit as string) || 100;
+        const cursor = req.query.cursor as string | undefined;
+
+        const matches = await prisma.match.findMany({ 
+            take: limit,
+            skip: cursor ? 1 : 0,
+            cursor: cursor ? { id: cursor } : undefined,
+            orderBy: { id: 'asc' }
+        });
+
+        const nextCursor = matches.length === limit ? matches[matches.length - 1].id : null;
+
         const data = matches.map(m => ({
             match_id: m.id,
             user_id: m.candidate_id,
@@ -79,7 +115,7 @@ export const getMatchesData = async (req: Request, res: Response, next: NextFunc
             explainability: m.explainability_json,
             created_at: m.created_at
         }));
-        res.json({ data, next_cursor: null });
+        res.json({ data, next_cursor: nextCursor });
     } catch(err) { next(err); }
 }
 

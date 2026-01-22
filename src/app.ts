@@ -4,7 +4,10 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import passport from 'passport';
+import { v4 as uuidv4 } from 'uuid';
 import { validateEnv } from './config/env';
+import { globalLimiter } from './middleware/rateLimit.middleware';
+import logger from './utils/logger';
 
 dotenv.config();
 validateEnv();
@@ -14,7 +17,21 @@ const app = express();
 // Middleware
 app.use(helmet());
 app.use(cors());
-app.use(morgan('dev'));
+
+// Request ID Middleware
+app.use((req: Request, res: Response, next: NextFunction) => {
+  req.headers['x-request-id'] = req.headers['x-request-id'] || uuidv4();
+  next();
+});
+
+// Logging
+app.use(morgan('combined', {
+  stream: { write: (message) => logger.info(message.trim()) }
+}));
+
+// Global Rate Limiting
+app.use(globalLimiter);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -37,7 +54,12 @@ app.use('/', routes);
 
 // Error Handling Middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error(err.stack);
+  logger.error(err.stack || err.message, { 
+    requestId: req.headers['x-request-id'],
+    url: req.url,
+    method: req.method
+  });
+  
   res.status(err.status || 500).json({
     error: {
       message: err.message || 'Internal Server Error',

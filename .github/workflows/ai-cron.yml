@@ -9,10 +9,16 @@ jobs:
   run-ai:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install Dependencies
+        run: pip install requests
       - name: Run AI Recommendation Engine
-        run: |
-          # Placeholder for real AI recommendation script
-          # The AI team will provide the logic to fetch data from /ai/data/*
-          # process it, and post results to /ai/recommendations/update
-          echo "AI Recommendation Cycle Triggered"
+        env:
+          AI_INTERNAL_API_KEY: ${{ secrets.AI_INTERNAL_API_KEY }}
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+        run: python scripts/ai-cron.py
 

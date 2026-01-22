@@ -11,7 +11,8 @@ const requiredEnv = [
   'LINKEDIN_CLIENT_ID',
   'LINKEDIN_CLIENT_SECRET',
   'BASE_URL',
-  'FRONTEND_URL'
+  'FRONTEND_URL',
+  'AI_INTERNAL_API_KEY'
 ];
 
 export const validateEnv = () => {
