@@ -56,12 +56,12 @@ sequenceDiagram
 ```mermaid
 graph TD
     A[User Enters App] --> B{First Login?}
-    B -- Yes --> C[Onboarding: POST /intent & /constraints]
-    B -- No --> D[Browse Feed: GET /jobs/feed]
+    B -- Yes --> C["Onboarding: POST /intent & /constraints"]
+    B -- No --> D["Browse Feed: GET /jobs/feed"]
     C --> D
     D --> E[Swipe Card]
-    E -- Swipe Right --> F[POST /swipe { direction: 'right' }]
-    E -- Swipe Left --> G[POST /swipe { direction: 'left' }]
+    E -- "Swipe Right" --> F["POST /swipe { direction: 'right' }"]
+    E -- "Swipe Left" --> G["POST /swipe { direction: 'left' }"]
     F --> H{Mutual Match?}
     H -- Yes --> I[Reveal Identities and Post Match]
     H -- No --> J[Wait for Recruiter Swipe]
