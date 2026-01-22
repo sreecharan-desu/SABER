@@ -309,3 +309,29 @@ All errors return a standardized JSON structure:
 | 403 | Authenticated but insufficient permissions for the role. |
 | 429 | Rate limit exceeded. |
 | 500 | Internal server error. |
+| 503 | Service unavailable / Database connection issue. |
+
+---
+
+## Production Setup Checklist
+
+✅ **Security**
+- [ ] Update `JWT_SECRET` and `AI_INTERNAL_API_KEY` with strong random strings.
+- [ ] Configure OAuth Client IDs and Secrets in environment variables.
+- [ ] Ensure `FRONTEND_URL` matches the deployed dashboard URL.
+
+✅ **Performance**
+- [ ] Run `npx prisma db push` or migrations on the production database.
+- [ ] Verify database indexes are active.
+- [ ] Observe rate limiting thresholds; adjust based on traffic.
+
+✅ **Operations**
+- [ ] Set up GitHub Secrets for `AI_INTERNAL_API_KEY` and `API_BASE_URL`.
+- [ ] Verify GitHub Action `ai-cron.yml` is scheduled and running.
+- [ ] Monitor logs via Winston/CloudWatch/Vercel Logs.
+
+---
+
+## Contact and Maintenance
+
+SABER is maintained by the Core Engineering Team. For infrastructure issues, contact System Admin via the internal dashboard.

@@ -37,6 +37,7 @@ export const aiLimiter = rateLimit({
   keyGenerator: (req: Request) => {
       return req.header('X-API-KEY') || req.ip || 'unknown';
   },
+  validate: { default: false },
   skip: (req: Request) => {
       // Only limit if API key matches internal one? No, limit all.
       // But maybe we trust our internal cron. 
