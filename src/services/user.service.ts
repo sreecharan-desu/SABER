@@ -125,8 +125,8 @@ export const enrichUserWithOnboarding = async (user: any) => {
   const hasGithub = accounts.some((acc: any) => acc.provider === 'github');
   const hasLinkedin = accounts.some((acc: any) => acc.provider === 'linkedin');
   
-  // onboarding is true if either GitHub or LinkedIn is missing
-  const onboarding = !hasGithub || !hasLinkedin;
+  // Default onboarding logic: true if either GitHub or LinkedIn is missing
+  let onboarding = !hasGithub || !hasLinkedin;
   
   let company_id = null;
   if (user.role === UserRole.recruiter) {
@@ -135,6 +135,11 @@ export const enrichUserWithOnboarding = async (user: any) => {
       select: { id: true }
     });
     company_id = company?.id || null;
+    
+    // Override: For recruiters, if a company is created, onboarding is complete
+    if (company_id) {
+      onboarding = false;
+    }
   }
   
   return { ...user, onboarding, company_id };
