@@ -118,7 +118,7 @@ export const linkOAuthCloudAccount = async (userId: string, profile: OAuthProfil
   });
 };
 
-export const enrichUserWithOnboarding = (user: any) => {
+export const enrichUserWithOnboarding = async (user: any) => {
   if (!user) return user;
   
   const accounts = user.oauth_accounts || [];
@@ -128,5 +128,14 @@ export const enrichUserWithOnboarding = (user: any) => {
   // onboarding is true if either GitHub or LinkedIn is missing
   const onboarding = !hasGithub || !hasLinkedin;
   
-  return { ...user, onboarding };
+  let company_id = null;
+  if (user.role === UserRole.recruiter) {
+    const company = await prisma.company.findFirst({
+      where: { recruiter_id: user.id },
+      select: { id: true }
+    });
+    company_id = company?.id || null;
+  }
+  
+  return { ...user, onboarding, company_id };
 };

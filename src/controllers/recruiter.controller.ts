@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import prisma from '../config/prisma';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
+import * as userService from '../services/user.service';
 
 const companySchema = z.object({
   name: z.string(),
@@ -31,7 +32,18 @@ export const createCompany = async (req: Request, res: Response, next: NextFunct
             }
         });
         
-        res.json(company);
+        // Fetch updated user with oauth_accounts to enrich with new company_id
+        const updatedUser = await prisma.user.findUniqueOrThrow({
+            where: { id: recruiterId },
+            include: { oauth_accounts: true }
+        });
+        
+        const enrichedUser = await userService.enrichUserWithOnboarding(updatedUser);
+        
+        res.json({ 
+            company: { ...company, company_id: company.id },
+            user: enrichedUser
+        });
     } catch (err) {
         next(err);
     }

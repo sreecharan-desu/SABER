@@ -62,7 +62,7 @@ export const handleOAuthCallback = async (req: Request, res: Response, next: Nex
 
     const token = generateToken({ id: user.id, role: user.role });
 
-    res.json({ token, user: userService.enrichUserWithOnboarding(user) });
+    res.json({ token, user: await userService.enrichUserWithOnboarding(user) });
   } catch (error) {
     next(error);
   }
@@ -104,5 +104,5 @@ export const linkProvider = async (req: Request, res: Response, next: NextFuncti
 };
 
 export const getMe = async (req: Request, res: Response) => {
-  res.json(userService.enrichUserWithOnboarding(req.user));
+  res.json(await userService.enrichUserWithOnboarding(req.user));
 };

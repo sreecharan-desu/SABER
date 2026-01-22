@@ -23,7 +23,7 @@ export const updateIntent = async (req: Request, res: Response, next: NextFuncti
       data: { intent_text, why_text },
       include: { oauth_accounts: true }
     });
-    res.json(userService.enrichUserWithOnboarding(user));
+    res.json(await userService.enrichUserWithOnboarding(user));
   } catch (err) {
     next(err);
   }
@@ -37,7 +37,7 @@ export const updateConstraints = async (req: Request, res: Response, next: NextF
       data: { constraints_json: constraints_json as any },
       include: { oauth_accounts: true }
     });
-    res.json(userService.enrichUserWithOnboarding(user));
+    res.json(await userService.enrichUserWithOnboarding(user));
   } catch (err) {
     next(err);
   }
@@ -51,7 +51,7 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
       data: { role },
       include: { oauth_accounts: true }
     });
-    res.json(userService.enrichUserWithOnboarding(user));
+    res.json(await userService.enrichUserWithOnboarding(user));
   } catch (err) {
     next(err);
   }
