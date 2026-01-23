@@ -23,13 +23,17 @@ export const handleOAuthCallbackGET = async (
   try {
     const { code, state } = req.query;
 
-    // Default to candidate URL
-    let targetFrontend = config.candidateFrontendUrl;
+    // Determine target frontend
+    // 1. Check for origin memory cookie (Set by middleware in app.ts)
+    // 2. Fallback to state-based detection
+    // 3. Absolute fallback to candidate production URL
+    let targetFrontend =
+      req.cookies?.saber_origin || config.candidateFrontendUrl;
 
     if (state && typeof state === "string") {
       let extractedOrigin: string | null = null;
 
-      // 1. Try to extract origin from "provider:origin" format or just a URL
+      // Try to extract origin from "provider:origin" format
       if (state.includes(":http")) {
         const parts = state.split(":http");
         extractedOrigin = "http" + parts[parts.length - 1];
@@ -42,11 +46,11 @@ export const handleOAuthCallbackGET = async (
         }
       }
 
-      // 2. If valid origin found, use it
+      // If valid origin extracted from state, it overrides the cookie
       if (extractedOrigin && config.allowedOrigins.includes(extractedOrigin)) {
         targetFrontend = extractedOrigin;
       }
-      // 3. Fallback to role-specific production URLs if explicit origin is missing
+      // Or if keyword based fallback
       else if (state.toLowerCase().includes("recruiter")) {
         targetFrontend = config.recruiterFrontendUrl;
       }
