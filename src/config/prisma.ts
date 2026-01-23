@@ -97,16 +97,30 @@ const prisma = new PrismaClient().$extends({
                             // Map the key to a model name (e.g., 'oauth_accounts' -> 'OAuthAccount')
                             // This is a simple heuristic mapping for SABER's schema
                             const modelMapping: Record<string, string> = {
+                                // Collections
                                 oauth_accounts: 'OAuthAccount',
                                 jobs: 'Job',
-                                company: 'Company',
+                                companies: 'Company',
                                 skills: 'Skill',
                                 swipes: 'Swipe',
+                                swipes_received: 'Swipe',
                                 matches: 'Match',
                                 messages: 'Message',
                                 bookmarks: 'Bookmark',
                                 applications: 'Application',
-                                payments: 'Payment'
+                                payments: 'Payment',
+                                sent_messages: 'Message',
+
+                                // Single Relations
+                                user: 'User',
+                                candidate: 'User',
+                                target_user: 'User',
+                                recruiter: 'User',
+                                sender: 'User',
+                                company: 'Company',
+                                job: 'Job',
+                                match: 'Match',
+                                recommendation_profile: 'RecommendationProfile'
                             };
 
                             const nextModel = modelMapping[key];
