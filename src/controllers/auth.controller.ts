@@ -23,19 +23,32 @@ export const handleOAuthCallbackGET = async (
   try {
     const { code, state } = req.query;
 
-    // Determine which frontend to redirect back to
-    // Priority: 1. State parameter (if it's a valid allowed origin) 2. Fallback to candidate URL
+    // Default to candidate URL
     let targetFrontend = config.candidateFrontendUrl;
 
     if (state && typeof state === "string") {
-      try {
-        const stateUrl = new URL(state);
-        const origin = stateUrl.origin;
-        if (config.allowedOrigins.includes(origin)) {
-          targetFrontend = origin;
+      let extractedOrigin: string | null = null;
+
+      // 1. Try to extract origin from "provider:origin" format or just a URL
+      if (state.includes(":http")) {
+        const parts = state.split(":http");
+        extractedOrigin = "http" + parts[parts.length - 1];
+      } else {
+        try {
+          const stateUrl = new URL(state);
+          extractedOrigin = stateUrl.origin;
+        } catch (e) {
+          // Not a URL
         }
-      } catch (e) {
-        // State is not a URL, ignore
+      }
+
+      // 2. If valid origin found, use it
+      if (extractedOrigin && config.allowedOrigins.includes(extractedOrigin)) {
+        targetFrontend = extractedOrigin;
+      }
+      // 3. Fallback to role-specific production URLs if explicit origin is missing
+      else if (state.toLowerCase().includes("recruiter")) {
+        targetFrontend = config.recruiterFrontendUrl;
       }
     }
 
