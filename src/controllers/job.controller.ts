@@ -31,7 +31,7 @@ export const getFeed = async (
     if (!user) return res.status(404).json({ error: "User not found" });
 
     // 1. Fetch potential jobs (not swiped by me)
-    const jobs = await prisma.job.findMany({
+    const jobsPool = await prisma.job.findMany({
       where: {
         active: true,
         swipes: {
@@ -43,48 +43,55 @@ export const getFeed = async (
       include: {
         company: true,
       },
-      take: 100, // Reasonable batch size
+      take: 200, // Increased pool for better splitting
     });
 
-    // 2. Filter & Rank
-    const validJobs: any[] = [];
-    const invalidJobs: any[] = [];
-
-    jobs.forEach((job) => {
-      const userC = (user.constraints_json as Record<string, any>) || {};
-      const jobC = (job.constraints_json as Record<string, any>) || {};
-
-      let isValid = true;
-      for (const key in userC) {
-        if (jobC[key] !== undefined && jobC[key] !== userC[key]) {
-          isValid = false;
-          break;
-        }
-      }
-
-      if (isValid) {
-        validJobs.push(job);
-      } else {
-        invalidJobs.push(job);
-      }
-    });
-
-    // Sort valid jobs by Signal Relevance (Skill overlap)
     const userSkillNames = new Set(
       user.skills.map((s) => s.name.toLowerCase()),
     );
 
-    const rankedJobs = validJobs
-      .map((job: any) => {
-        let score = 0;
-        job.skills_required.forEach((s: string) => {
-          if (userSkillNames.has(s.toLowerCase())) score += 1;
-        });
-        return { job, score };
-      })
-      .sort((a, b: any) => b.score - a.score);
+    // Helper to check constraints deeply
+    const isConstraintMatch = (userValue: any, jobValue: any): boolean => {
+      if (jobValue === undefined) return true;
+      if (userValue === jobValue) return true;
+      if (Array.isArray(userValue) && Array.isArray(jobValue)) {
+        if (userValue.length !== jobValue.length) return false;
+        return userValue.every((v, i) => v === jobValue[i]);
+      }
+      return false;
+    };
 
-    // 3. Format Response
+    const recommendedList: any[] = [];
+    const remainingList: any[] = [];
+
+    jobsPool.forEach((job) => {
+      const userC = (user.constraints_json as Record<string, any>) || {};
+      const jobC = (job.constraints_json as Record<string, any>) || {};
+
+      let matchesConstraints = true;
+      for (const key in userC) {
+        if (!isConstraintMatch(userC[key], jobC[key])) {
+          matchesConstraints = false;
+          break;
+        }
+      }
+
+      // Calculate score (skill overlap)
+      let score = 0;
+      job.skills_required.forEach((s: string) => {
+        if (userSkillNames.has(s.toLowerCase())) score += 1;
+      });
+
+      if (matchesConstraints && score > 0) {
+        recommendedList.push({ job, score });
+      } else {
+        remainingList.push(job);
+      }
+    });
+
+    // Sort recommended by score
+    recommendedList.sort((a, b) => b.score - a.score);
+
     const formatJob = (job: any) => ({
       id: job.id,
       problem_statement: job.problem_statement,
@@ -99,8 +106,8 @@ export const getFeed = async (
     });
 
     const response = {
-      jobs: rankedJobs.map(({ job }) => formatJob(job)),
-      all: invalidJobs.map((job) => formatJob(job)),
+      jobs: recommendedList.map((r) => formatJob(r.job)),
+      all: remainingList.map((job) => formatJob(job)),
     };
 
     // Cache for 60 seconds
