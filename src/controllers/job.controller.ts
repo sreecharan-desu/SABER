@@ -153,6 +153,17 @@ export const swipe = async (
 
     // Daily Limit Check
     if (direction === "right") {
+      // Fetch user tier
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { subscription_tier: true },
+      });
+
+      const tier = user?.subscription_tier || "free_tier";
+      let limit = 10; // Free Tier Default
+      if (tier === "premium") limit = 50;
+      if (tier === "pro") limit = 100;
+
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
       const todaySwipes = await prisma.swipe.count({
@@ -162,11 +173,14 @@ export const swipe = async (
           created_at: { gte: startOfDay },
         },
       });
-      const limit = parseInt(process.env.SWIPE_LIMIT || "50");
+
       if (todaySwipes >= limit) {
-        return res
-          .status(429)
-          .json({ error: "Daily right-swipe limit reached" });
+        return res.status(429).json({
+          error: "Daily right-swipe limit reached",
+          code: "SWIPE_LIMIT_REACHED",
+          current_tier: tier,
+          limit,
+        });
       }
     }
 
