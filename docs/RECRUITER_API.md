@@ -101,21 +101,28 @@ Content-Type: application/json
 
 **Endpoint:** `POST /recruiters/job`
 
-**Description:** Creates a new job posting for a company owned by the recruiter. Includes automatic validation of company ownership and cache invalidation.
+**Description:** Creates a new job posting for a company owned by the recruiter.
+
+**Key Logic:**
+
+- **Ownership Validation**: Automatically verifies that the `company_id` provided in the request belongs to the authenticated recruiter. Returns `403 Forbidden` if ownership is invalid.
+- **Data Structure**: Expects a JSON body matching the `jobSchema` (problem statement, expectations, skills, constraints, etc.).
+- **Cache Invalidation**: Automatically clears the `signals` and `jobs` cache for the recruiter to ensure their dashboard remains up-to-date.
 
 **Request Body:**
 
-```typescript
+```json
 {
-  company_id: string;              // Required: Company ID (must be owned by recruiter)
-  problem_statement: string;       // Required: Job description/problem to solve
-  expectations: string;            // Required: What the company expects
-  non_negotiables: string;         // Required: Must-have requirements
-  deal_breakers: string;           // Required: Automatic disqualifiers
-  skills_required: string[];       // Required: Array of required skills
-  constraints_json: {              // Required: Job constraints (location, salary, etc.)
-    [key: string]: any;
-  };
+  "company_id": "uuid-here",
+  "problem_statement": "Brief description of the challenge...",
+  "expectations": "What the candidate should achieve...",
+  "non_negotiables": "Must-haves...",
+  "deal_breakers": "Automatic disqualifiers...",
+  "skills_required": ["TypeScript", "Node.js"],
+  "constraints_json": {
+    "location": "Remote",
+    "salary_range": [80000, 120000]
+  }
 }
 ```
 
@@ -150,7 +157,8 @@ Content-Type: application/json
 1. Fetches all active jobs for companies owned by the recruiter.
 2. Retrieves all candidates with role `candidate`.
 3. Filters out candidates already swiped for each job.
-4. Applies hard constraint matching.
+4. **Skill Matching**: Checks for at least one overlapping skill between the job's `skills_required` and the candidate's profile.
+5. **Constraint Matching**: Applies hard constraint matching (e.g., location, salary).
 
 **Response:**
 
@@ -213,6 +221,26 @@ Content-Type: application/json
 
 **Description:** Updates an existing job posting. Verifies ownership before applying changes.
 
+**Key Logic:**
+
+- **Ownership Verification**: Checks if the job belongs to a company owned by the authenticated recruiter.
+- **Partial Updates**: Supports updating any combination of `problem_statement`, `expectations`, `non_negotiables`, `deal_breakers`, `skills_required`, `constraints_json`, and `active`.
+- **Cache Invalidation**: Automatically clears the `signals`, `jobs`, and `recruiter_feed` cache.
+
+**Request Body:**
+
+```typescript
+{
+  problem_statement?: string;
+  expectations?: string;
+  non_negotiables?: string;
+  deal_breakers?: string;
+  skills_required?: string[];
+  constraints_json?: Record<string, any>;
+  active?: boolean;
+}
+```
+
 ---
 
 ### 7. Delete Job
@@ -263,6 +291,6 @@ Matches are created asynchronously within a database transaction when a mutual "
 
 ---
 
-**Last Updated:** 2026-01-22  
+**Last Updated:** 2026-01-23  
 **API Version:** 1.0  
 **Maintainer:** SABER Development Team
