@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../config/prisma';
 import { z } from 'zod';
+import * as dataRefreshService from '../services/data.refresh.service';
 
 // Zod schemas for AI writes
 const recommendationUpdateSchema = z.object({
@@ -140,5 +141,19 @@ export const updateRecommendation = async (req: Request, res: Response, next: Ne
         });
         
         res.json({ status: "ok", updated_at: new Date() });
+    } catch(err) { next(err); }
+};
+
+export const triggerDataRefresh = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        // Long running process - decouple from response
+        dataRefreshService.refreshAllUsersData()
+            .then(() => console.log('[REFRESH] Complete.'))
+            .catch(err => console.error('[REFRESH] Error:', err));
+            
+        res.status(202).json({ 
+            status: "accepted", 
+            message: "Data refresh cycle initiated for all candidates." 
+        });
     } catch(err) { next(err); }
 };

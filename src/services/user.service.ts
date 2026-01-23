@@ -8,6 +8,8 @@ export interface OAuthProfile {
   displayName: string;
   photos?: { value: string }[];
   accessToken?: string; // Added to facilitate data extraction
+  refreshToken?: string;
+  expiresIn?: number; // seconds
   _raw?: string | object;
 }
 
@@ -49,8 +51,11 @@ export const findOrCreateUserConfirmingIdentity = async (profile: OAuthProfile) 
           user_id: existingUser.id,
           provider: profile.provider,
           provider_user_id: profile.id,
+          access_token: profile.accessToken,
+          refresh_token: profile.refreshToken,
+          expires_at: profile.expiresIn ? new Date(Date.now() + profile.expiresIn * 1000) : null,
           raw_data_json: profile._raw ? (typeof profile._raw === 'string' ? JSON.parse(profile._raw) : profile._raw) : {},
-        },
+        } as any,
       });
       return prisma.user.findUniqueOrThrow({
         where: { id: existingUser.id },
@@ -82,8 +87,11 @@ export const findOrCreateUserConfirmingIdentity = async (profile: OAuthProfile) 
         create: {
           provider: profile.provider,
           provider_user_id: profile.id,
+          access_token: profile.accessToken,
+          refresh_token: profile.refreshToken,
+          expires_at: profile.expiresIn ? new Date(Date.now() + profile.expiresIn * 1000) : null,
           raw_data_json: profile._raw ? (typeof profile._raw === 'string' ? JSON.parse(profile._raw) : profile._raw) : {},
-        },
+        } as any,
       },
     },
     include: { oauth_accounts: true },
@@ -113,8 +121,11 @@ export const linkOAuthCloudAccount = async (userId: string, profile: OAuthProfil
       user_id: userId,
       provider: profile.provider,
       provider_user_id: profile.id,
+      access_token: profile.accessToken,
+      refresh_token: profile.refreshToken,
+      expires_at: profile.expiresIn ? new Date(Date.now() + profile.expiresIn * 1000) : null,
       raw_data_json: profile._raw ? (typeof profile._raw === 'string' ? JSON.parse(profile._raw) : profile._raw) : {},
-    },
+    } as any,
   });
 };
 

@@ -24,6 +24,9 @@ export const getGoogleProfile = async (code: string, redirectUri: string): Promi
     email: profile.email,
     displayName: profile.name,
     photos: profile.picture ? [{ value: profile.picture }] : [],
+    accessToken: tokenData.access_token,
+    refreshToken: tokenData.refresh_token,
+    expiresIn: tokenData.expires_in,
     _raw: profile,
   };
 };
@@ -67,6 +70,8 @@ export const getGithubProfile = async (code: string, redirectUri: string): Promi
     displayName: user.name || user.login,
     photos: user.avatar_url ? [{ value: user.avatar_url }] : [],
     accessToken,
+    refreshToken: tokenData.refresh_token,
+    expiresIn: tokenData.expires_in,
     _raw: user,
   };
 };
@@ -100,6 +105,47 @@ export const getLinkedinProfile = async (code: string, redirectUri: string): Pro
     displayName: user.name,
     photos: user.picture ? [{ value: user.picture }] : [],
     accessToken,
+    refreshToken: tokenData.refresh_token,
+    expiresIn: tokenData.expires_in,
     _raw: user,
   };
+};
+export const refreshAccessToken = async (provider: string, refreshToken: string) => {
+  let url = '';
+  let body: any = {};
+  
+  if (provider === 'google') {
+    url = 'https://oauth2.googleapis.com/token';
+    body = {
+      client_id: config.google.clientId,
+      client_secret: config.google.clientSecret,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token',
+    };
+  } else if (provider === 'github') {
+    url = 'https://github.com/login/oauth/access_token';
+    body = {
+      client_id: config.github.clientId,
+      client_secret: config.github.clientSecret,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token',
+    };
+  } else if (provider === 'linkedin') {
+    url = 'https://www.linkedin.com/oauth/v2/accessToken';
+    const params = new URLSearchParams();
+    params.append('grant_type', 'refresh_token');
+    params.append('refresh_token', refreshToken);
+    params.append('client_id', config.linkedin.clientId);
+    params.append('client_secret', config.linkedin.clientSecret);
+    
+    const { data } = await axios.post(url, params, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
+    return data;
+  }
+
+  const { data } = await axios.post(url, body, {
+    headers: { Accept: 'application/json' },
+  });
+  return data;
 };

@@ -49,6 +49,9 @@ model OAuthAccount {
   user_id           String
   provider          String
   provider_user_id  String
+  access_token      String?  @db.Text
+  refresh_token     String?  @db.Text
+  expires_at        DateTime?
   raw_data_json     Json
   user              User     @relation(fields: [user_id], references: [id])
 

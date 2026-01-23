@@ -17,5 +17,6 @@ router.get('/data/swipes', aiController.getSwipesData);
 router.get('/data/matches', aiController.getMatchesData);
 
 router.post('/recommendations/update', aiController.updateRecommendation);
+router.post('/refresh-signals', aiController.triggerDataRefresh);
 
 export default router;
