@@ -3,11 +3,21 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-  throw new Error("Razorpay keys are missing in environment variables");
+// Export a robust instance or separate config
+const key_id = process.env.RAZORPAY_KEY_ID;
+const key_secret = process.env.RAZORPAY_KEY_SECRET;
+
+if (!key_id || !key_secret) {
+  console.error("Razorpay keys are missing. Payment features will fail.");
 }
 
-export const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+export const razorpay =
+  key_id && key_secret
+    ? new Razorpay({ key_id, key_secret })
+    : ({
+        orders: {
+          create: async () => {
+            throw new Error("Razorpay not configured");
+          },
+        },
+      } as any);
