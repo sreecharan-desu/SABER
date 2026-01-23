@@ -96,8 +96,13 @@ export const getFeed = async (
       id: job.id,
       problem_statement: job.problem_statement,
       expectations: job.expectations,
+      non_negotiables: job.non_negotiables,
+      deal_breakers: job.deal_breakers,
       skills_required: job.skills_required,
       constraints: job.constraints_json,
+      active: job.active,
+      created_at: job.created_at,
+      updated_at: job.updated_at,
       company: {
         name: job.company.name,
         logo_url: job.company.logo_url,

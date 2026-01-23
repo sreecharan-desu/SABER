@@ -5,6 +5,7 @@
 The Recruiter API provides endpoints for recruiters to manage companies, create job postings, view candidate feeds, and swipe on candidates. This module implements the recruiter-side functionality of the SABER job matching platform.
 
 **Files:**
+
 - `src/controllers/recruiter.controller.ts` - Business logic for recruiter operations
 - `src/routes/recruiter.routes.ts` - Route definitions and middleware configuration
 
@@ -16,7 +17,7 @@ The Recruiter API provides endpoints for recruiters to manage companies, create 
 2. [API Endpoints](#api-endpoints)
 3. [Data Models](#data-models)
 4. [Business Logic](#business-logic)
-5. [Error Handling](#error-handling)w
+5. [Error Handling](#error-handling)
 6. [Rate Limiting](#rate-limiting)
 
 ---
@@ -24,11 +25,13 @@ The Recruiter API provides endpoints for recruiters to manage companies, create 
 ## Authentication & Authorization
 
 All recruiter endpoints require:
+
 - **JWT Authentication**: Valid JWT token in `Authorization` header
 - **Role-Based Access**: User must have `recruiter` role
 - **Middleware Chain**: `authenticateJWT` → `requireRole(['recruiter'])`
 
 ### Example Request Header
+
 ```http
 Authorization: Bearer <jwt_token>
 Content-Type: application/json
@@ -40,11 +43,12 @@ Content-Type: application/json
 
 ### 1. Create Company
 
-**Endpoint:** `POST /api/recruiter/company`
+**Endpoint:** `POST /recruiters/company`
 
 **Description:** Creates a new company profile associated with the authenticated recruiter.
 
 **Request Body:**
+
 ```typescript
 {
   name: string;        // Required: Company name
@@ -53,6 +57,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```typescript
 {
   company: {
@@ -84,6 +89,7 @@ Content-Type: application/json
 ```
 
 **Status Codes:**
+
 - `200 OK` - Company created successfully
 - `400 Bad Request` - Invalid input data
 - `401 Unauthorized` - Missing or invalid JWT
@@ -93,11 +99,12 @@ Content-Type: application/json
 
 ### 2. Create Job Posting
 
-**Endpoint:** `POST /api/recruiter/job`
+**Endpoint:** `POST /recruiters/job`
 
-**Description:** Creates a new job posting for a company owned by the recruiter.
+**Description:** Creates a new job posting for a company owned by the recruiter. Includes automatic validation of company ownership and cache invalidation.
 
 **Request Body:**
+
 ```typescript
 {
   company_id: string;              // Required: Company ID (must be owned by recruiter)
@@ -113,6 +120,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```typescript
 {
   id: string;
@@ -133,17 +141,19 @@ Content-Type: application/json
 
 ### 3. Get Recruiter Feed
 
-**Endpoint:** `GET /api/recruiter/recruiter/feed`
+**Endpoint:** `GET /recruiters/feed`
 
 **Description:** Returns a feed of candidates who match the recruiter's active job postings and haven't been swiped yet.
 
 **Matching Logic:**
+
 1. Fetches all active jobs for companies owned by the recruiter.
 2. Retrieves all candidates with role `candidate`.
 3. Filters out candidates already swiped for each job.
 4. Applies hard constraint matching.
 
 **Response:**
+
 ```typescript
 {
   candidates: Array<{
@@ -163,13 +173,14 @@ Content-Type: application/json
 
 ### 4. Recruiter Swipe
 
-**Endpoint:** `POST /api/recruiter/recruiter/swipe`
+**Endpoint:** `POST /recruiters/swipe`
 
 **Description:** Records a recruiter's swipe (left/right) on a candidate for a specific job. Creates a match if mutual interest exists.
 
 **Rate Limiting:** Subject to swipe rate limiter.
 
 **Request Body:**
+
 ```typescript
 {
   job_id: string;
@@ -179,6 +190,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```typescript
 {
   success: true;
@@ -187,12 +199,54 @@ Content-Type: application/json
 
 ---
 
+### 5. Get My Jobs
+
+**Endpoint:** `GET /recruiters/jobs`
+
+**Description:** Retrieves all job postings created by the companies owned by the recruiter.
+
+---
+
+### 6. Update Job
+
+**Endpoint:** `PUT /recruiters/job/:id`
+
+**Description:** Updates an existing job posting. Verifies ownership before applying changes.
+
+---
+
+### 7. Delete Job
+
+**Endpoint:** `DELETE /recruiters/job/:id`
+
+**Description:** Deletes a job posting and all associated data (swipes, matches, messages).
+
+---
+
+### 8. Get Signals of Interest
+
+**Endpoint:** `GET /recruiters/signals`
+
+**Description:** Returns a list of candidates who have expressed interest (swiped right) on the recruiter's jobs but haven't been swiped back yet.
+
+---
+
+### 9. Update Company Images
+
+**Endpoint:** `PUT /recruiters/company/images`
+
+**Description:** Uploads logo or cover images for the recruiter's company using multipart/form-data.
+
+---
+
 ## Data Models
 
 ### Company Schema
+
 Validates company creation input.
 
 ### Job Schema
+
 Validates job posting creation, including required fields and JSON constraints.
 
 ---
@@ -200,9 +254,11 @@ Validates job posting creation, including required fields and JSON constraints.
 ## Business Logic
 
 ### Constraint Matching
+
 The platform uses a hard constraint matching system where a candidate's constraints must be satisfied by the job's parameters for them to appear in the recruiter's feed.
 
 ### Match Creation
+
 Matches are created asynchronously within a database transaction when a mutual "right" swipe is detected between a recruiter (for a specific job) and a candidate.
 
 ---
