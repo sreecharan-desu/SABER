@@ -95,6 +95,9 @@ export const createJob = async (req: Request, res: Response, next: NextFunction)
             }
         });
 
+        // Invalidate recruiter signals cache
+        speedCache.delete(`signals_${recruiterId}`);
+
         res.json(job);
     } catch (err) {
         next(err);
@@ -329,6 +332,9 @@ export const updateJob = async (req: Request, res: Response, next: NextFunction)
             }
         });
 
+        // Invalidate recruiter signals cache
+        speedCache.delete(`signals_${userId}`);
+
         res.json(updatedJob);
     } catch (err) {
         next(err);
@@ -374,6 +380,9 @@ export const deleteJob = async (req: Request, res: Response, next: NextFunction)
                 where: { id }
             });
         });
+
+        // Invalidate recruiter signals cache
+        speedCache.delete(`signals_${userId}`);
 
         res.json({ success: true, message: 'Job and all associated data deleted successfully' });
     } catch (err) {

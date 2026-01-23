@@ -23,6 +23,10 @@ class SimpleCache {
     return entry.data;
   }
 
+  delete(key: string): void {
+    this.cache.delete(key);
+  }
+
   clear(): void {
     this.cache.clear();
   }
