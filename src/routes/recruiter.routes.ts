@@ -7,7 +7,8 @@ const router = Router();
 
 router.post('/company', authenticateJWT, requireRole(['recruiter']), recruiterController.createCompany);
 router.post('/job', authenticateJWT, requireRole(['recruiter']), recruiterController.createJob);
-router.get('/recruiter/feed', authenticateJWT, requireRole(['recruiter']), recruiterController.getRecruiterFeed); // Optional endpoint not explicitly in spec but needed
+router.get('/jobs', authenticateJWT, requireRole(['recruiter']), recruiterController.getMyJobs);
+router.get('/recruiter/feed', authenticateJWT, requireRole(['recruiter']), recruiterController.getRecruiterFeed); 
 router.post('/recruiter/swipe', authenticateJWT, requireRole(['recruiter']), swipeLimiter, recruiterController.recruiterSwipe); // Same
 
 export default router;
