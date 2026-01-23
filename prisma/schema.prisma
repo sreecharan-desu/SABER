@@ -28,7 +28,7 @@ model User {
   why_text        String?
   constraints_json Json?
   created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
+  updated_at      DateTime @updatedAtw
 
   oauth_accounts  OAuthAccount[]
   skills          Skill[]
@@ -37,6 +37,8 @@ model User {
   matches         Match[]
   sent_messages   Message[]
   recommendation_profile RecommendationProfile?
+  bookmarks       Bookmark[]
+  applications    Application[]
   
   // Implicit relation to companies managed by this recruiter
   companies       Company[]
@@ -74,6 +76,7 @@ model Company {
   id          String   @id @default(uuid())
   name        String
   website     String?
+  email       String?
   verified    Boolean  @default(false)
   created_at  DateTime @default(now())
   
@@ -101,6 +104,8 @@ model Job {
   company           Company  @relation(fields: [company_id], references: [id])
   swipes            Swipe[]
   matches           Match[]
+  bookmarks         Bookmark[]
+  applications      Application[]
 
   @@index([company_id])
   @@index([active])
@@ -175,4 +180,46 @@ model ApiKey {
   lastUsed  DateTime?
   createdAt DateTime @default(now())
   revokedAt DateTime?
+}
+
+enum ApplicationStatus {
+  pending
+  reviewing
+  interview
+  accepted
+  rejected
+  withdrawn
+}
+
+model Bookmark {
+  id         String   @id @default(uuid())
+  user_id    String
+  job_id     String
+  notes      String?
+  created_at DateTime @default(now())
+
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  job        Job      @relation(fields: [job_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, job_id])
+  @@index([user_id])
+  @@index([job_id])
+}
+
+model Application {
+  id         String            @id @default(uuid())
+  user_id    String
+  job_id     String
+  status     ApplicationStatus @default(pending)
+  cover_note String?
+  created_at DateTime          @default(now())
+  updated_at DateTime          @updatedAt
+
+  user       User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  job        Job               @relation(fields: [job_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, job_id])
+  @@index([user_id])
+  @@index([job_id])
+  @@index([status])
 }
