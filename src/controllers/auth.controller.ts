@@ -64,9 +64,15 @@ export const handleOAuthCallback = async (req: Request, res: Response, next: Nex
       linkedinDataService.extractAndStoreLinkedinData(user.id, profile.accessToken, profile._raw);
     }
 
-    const token = generateToken({ id: user.id, role: user.role });
+    // Re-fetch to ensure all linked accounts are captured for the frontend
+    const finalUser = await prisma.user.findUniqueOrThrow({
+        where: { id: user.id },
+        include: { oauth_accounts: true }
+    });
 
-    res.json({ token, user: await userService.enrichUserWithOnboarding(user) });
+    const token = generateToken({ id: finalUser.id, role: finalUser.role });
+
+    res.json({ token, user: await userService.enrichUserWithOnboarding(finalUser) });
   } catch (error) {
     next(error);
   }
@@ -97,19 +103,34 @@ export const linkProvider = async (req: Request, res: Response, next: NextFuncti
     await userService.linkOAuthCloudAccount((req.user as any)?.id, profile);
     
     // Trigger GitHub data extraction in background if available
+    const updatedUser = await prisma.user.findUniqueOrThrow({
+      where: { id: (req.user as any).id },
+      include: { oauth_accounts: true }
+    });
+    
+    // Trigger extraction in background
     if (provider === 'github' && profile.accessToken) {
-      githubDataService.extractAndStoreGithubData((req.user as any).id, profile.accessToken);
+      githubDataService.extractAndStoreGithubData(updatedUser.id, profile.accessToken);
     }
     if (provider === 'linkedin' && profile.accessToken) {
-      linkedinDataService.extractAndStoreLinkedinData((req.user as any).id, profile.accessToken, profile._raw);
+      linkedinDataService.extractAndStoreLinkedinData(updatedUser.id, profile.accessToken, profile._raw);
     }
     
-    res.json({ status: 'ok', message: 'Provider linked successfully' });
+    res.json({ 
+      status: 'ok', 
+      message: 'Provider linked successfully',
+      user: await userService.enrichUserWithOnboarding(updatedUser)
+    });
   } catch (error) {
     next(error);
   }
 };
 
 export const getMe = async (req: Request, res: Response) => {
-  res.json(await userService.enrichUserWithOnboarding(req.user));
+  // Re-fetch to ensure oauth_accounts and other links are fresh
+  const user = await prisma.user.findUnique({
+    where: { id: (req.user as any).id },
+    include: { oauth_accounts: true }
+  });
+  res.json(await userService.enrichUserWithOnboarding(user));
 };

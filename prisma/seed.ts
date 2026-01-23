@@ -7,10 +7,6 @@ const TECH_STACKS = [
   'React', 'Node.js', 'TypeScript', 'Python', 'Django', 'FastAPI', 'Go', 'Rust', 'Docker', 'Kubernetes', 'AWS', 'GCP', 'Azure', 'PostgreSQL', 'MongoDB', 'Redis', 'GraphQL', 'Next.js', 'Vue.js', 'Angular', 'Java', 'Spring Boot', 'C#', '.NET', 'Swift', 'Kotlin', 'Flutter', 'React Native', 'Terraform', 'Ansible'
 ];
 
-function getRandomSkills(count: number = 5) {
-  return faker.helpers.arrayElements(TECH_STACKS, count);
-}
-
 const JOB_TEMPLATES = [
   {
     problem_statement: "We are scaling our real-time notification system to handle 1M+ concurrent users. The current polling architecture is inefficient.",
@@ -46,6 +42,20 @@ const JOB_TEMPLATES = [
     non_negotiables: "Experience with mobile security best practices.",
     deal_breakers: "Only native development experience without framework knowledge.",
     skills: ['Flutter', 'Android', 'iOS']
+  },
+  {
+    problem_statement: "Designing a serverless backend for an e-commerce platform with sudden traffic spikes.",
+    expectations: "Leverage AWS Lambda and DynamoDB for cost-effective scaling. Implement event-driven updates.",
+    non_negotiables: "Experience with AWS Lambda and Serverless framework.",
+    deal_breakers: "Heavy preference for long-running server instances.",
+    skills: ['Node.js', 'AWS', 'Terraform']
+  },
+  {
+    problem_statement: "Our AI model inference is too slow for real-time video processing.",
+    expectations: "Optimize PyTorch models for deployment. Implement efficient batching and multi-threading in C++.",
+    non_negotiables: "Deep knowledge of PyTorch and C++ performance tuning.",
+    deal_breakers: "No experience with machine learning model deployment.",
+    skills: ['Python', 'C++', 'Java']
   }
 ];
 
@@ -74,191 +84,194 @@ const CANDIDATE_TEMPLATES = [
     intent: "Data Engineer interested in building real-time processing pipelines.",
     why: "I enjoy turning raw data into actionable insights.",
     tech: ['Python', 'Django', 'PostgreSQL', 'MongoDB', 'Redis']
+  },
+  {
+    intent: "UI/UX Designer who codes. Bridging the gap between pixels and production.",
+    why: "I hate seeing great designs compromised by poor implementation.",
+    tech: ['React', 'TypeScript', 'Next.js']
+  },
+  {
+    intent: "Security Engineer focused on Zero Trust architecture and pentesting.",
+    why: "Security shouldn't be an afterthought; it should be the foundation.",
+    tech: ['Go', 'Python', 'Docker', 'Kubernetes']
   }
 ];
 
 async function main() {
   console.log('🌱 Starting seed...');
 
-  // 1. Clean existing data
-  await prisma.message.deleteMany();
-  await prisma.match.deleteMany();
-  await prisma.swipe.deleteMany();
-  await prisma.skill.deleteMany();
-  await prisma.oAuthAccount.deleteMany();
-  await prisma.job.deleteMany();
-  await prisma.company.deleteMany();
-  await prisma.recommendationProfile.deleteMany();
-  await prisma.user.deleteMany();
+  // 1. Fetch existing users to interact with
+  const existingUsers = await prisma.user.findMany({
+    include: { companies: true }
+  });
+  
+  const existingCandidates = existingUsers.filter(u => u.role === UserRole.candidate);
+  const existingRecruiters = existingUsers.filter(u => u.role === UserRole.recruiter);
 
-  console.log('🧹 Cleaned existing data');
+  console.log(`📡 Found ${existingCandidates.length} existing candidates and ${existingRecruiters.length} existing recruiters.`);
 
-//   // 2. Create Recruiters (5) & Companies (5)
-//   const recruiters = [];
-//   const companies = [];
+  // 2. Create NEW Recruiters (20) & Companies (20)
+  const newRecruiters = [];
+  const allCompanies = [...existingUsers.flatMap(u => u.companies)];
 
-//   for (let i = 0; i < 5; i++) {
-//     const recruiter = await prisma.user.create({
-//       data: {
-//         role: UserRole.recruiter,
-//         name: faker.person.fullName(),
-//         email: faker.internet.email(),
-//         photo_url: faker.image.avatar(),
-//         created_at: faker.date.past()
-//       }
-//     });
-//     recruiters.push(recruiter);
+  for (let i = 0; i < 20; i++) {
+    const recruiter = await prisma.user.create({
+      data: {
+        role: UserRole.recruiter,
+        name: faker.person.fullName(),
+        email: faker.internet.email(),
+        photo_url: faker.image.avatar(),
+        created_at: faker.date.past()
+      }
+    });
+    newRecruiters.push(recruiter);
 
-//     const company = await prisma.company.create({
-//       data: {
-//         name: faker.company.name(),
-//         website: faker.internet.url(),
-//         verified: faker.datatype.boolean(0.8), // 80% verified
-//         recruiter_id: recruiter.id,
-//         created_at: faker.date.past()
-//       }
-//     });
-//     companies.push(company);
-//   }
-//   console.log(`✅ Created ${recruiters.length} recruiters and companies`);
+    const company = await prisma.company.create({
+      data: {
+        name: faker.company.name(),
+        website: faker.internet.url(),
+        verified: faker.datatype.boolean(0.7),
+        recruiter_id: recruiter.id,
+        created_at: faker.date.past()
+      }
+    });
+    allCompanies.push(company);
+  }
+  console.log(`✅ Created 20 new recruiters and companies`);
 
-//   // 3. Create Jobs (50)
-//   const jobs = [];
-//   for (const company of companies) {
-//     // 10 jobs per company
-//     for (let i = 0; i < 10; i++) {
-//         const template = faker.helpers.arrayElement(JOB_TEMPLATES);
-        
-//         const job = await prisma.job.create({
-//             data: {
-//                 company_id: company.id,
-//                 problem_statement: template.problem_statement,
-//                 expectations: template.expectations, 
-//                 non_negotiables: template.non_negotiables,
-//                 deal_breakers: template.deal_breakers,
-//                 skills_required: template.skills,
-//                 constraints_json: {
-//                   salary_range: [faker.number.int({ min: 60000, max: 90000 }), faker.number.int({ min: 100000, max: 180000 })],
-//                   experience_years: faker.number.int({ min: 1, max: 10 }),
-//                   location: faker.location.city()
-//                 },
-//                 active: true,
-//                 created_at: faker.date.recent({ days: 60 })
-//             }
-//         });
-//         jobs.push(job);
-//     }
-//   }
-//   console.log(`✅ Created ${jobs.length} jobs`);
+  // 3. Create NEW Candidates (100) & Skills
+  const newCandidates = [];
+  for (let i = 0; i < 100; i++) {
+    const template = faker.helpers.arrayElement(CANDIDATE_TEMPLATES);
+    const candidate = await prisma.user.create({
+      data: {
+        role: UserRole.candidate,
+        name: faker.person.fullName(),
+        email: faker.internet.email(),
+        photo_url: faker.image.avatar(),
+        intent_text: template.intent,
+        why_text: template.why,
+        constraints_json: {
+          preferred_salary: faker.number.int({ min: 80000, max: 250000 }),
+          preferred_locations: [faker.location.city(), 'Remote'],
+          remote_only: faker.datatype.boolean(0.3)
+        },
+        skills: {
+          create: template.tech.map(s => ({
+            name: s,
+            source: faker.helpers.arrayElement(['manual', 'github', 'linkedin']),
+            confidence_score: faker.number.float({ min: 0.6, max: 0.95 })
+          }))
+        }
+      }
+    });
+    newCandidates.push(candidate);
+  }
+  const allCandidates = [...existingCandidates, ...newCandidates];
+  console.log(`✅ Created 100 new candidates. Total: ${allCandidates.length}`);
 
-//   // 4. Create Candidates (100) & Skills
-//   const candidates = [];
-//   for (let i = 0; i < 100; i++) {
-//     const template = faker.helpers.arrayElement(CANDIDATE_TEMPLATES);
-//     const skillsList = template.tech;
-    
-//     // Create candidate
-//     const candidate = await prisma.user.create({
-//       data: {
-//         role: UserRole.candidate,
-//         name: faker.person.fullName(),
-//         email: faker.internet.email(),
-//         photo_url: faker.image.avatar(),
-//         intent_text: template.intent,
-//         why_text: template.why,
-//         constraints_json: {
-//           preferred_salary: faker.number.int({ min: 70000, max: 150000 }),
-//           preferred_locations: [faker.location.city(), faker.location.city()],
-//           remote_only: faker.datatype.boolean()
-//         },
-//         created_at: faker.date.past(),
-//         skills: {
-//             create: skillsList.map(s => ({
-//                 name: s,
-//                 source: 'manual', // or 'linkedin', 'github'
-//                 confidence_score: faker.number.float({ min: 0.5, max: 1.0 })
-//             }))
-//         }
-//       }
-//     });
+  // 4. Create NEW Jobs (200 total)
+  const allJobs = [];
+  // Ensure every company has at least some jobs
+  for (const company of allCompanies) {
+    const jobCount = faker.number.int({ min: 2, max: 6 });
+    for (let j = 0; j < jobCount; j++) {
+      const template = faker.helpers.arrayElement(JOB_TEMPLATES);
+      const job = await prisma.job.create({
+        data: {
+          company_id: company.id,
+          problem_statement: template.problem_statement,
+          expectations: template.expectations,
+          non_negotiables: template.non_negotiables,
+          deal_breakers: template.deal_breakers,
+          skills_required: template.skills,
+          constraints_json: {
+            salary_range: [faker.number.int({ min: 100000, max: 130000 }), faker.number.int({ min: 140000, max: 250000 })],
+            location: faker.helpers.arrayElement([faker.location.city(), 'Remote']),
+            role_type: faker.helpers.arrayElement(['Full-time', 'Contract', 'Founding Engineer'])
+          }
+        }
+      });
+      allJobs.push(job);
+    }
+  }
+  console.log(`✅ Created ${allJobs.length} new jobs across ${allCompanies.length} companies`);
 
-//     // Create Recommendation Profile for AI
-//     await prisma.recommendationProfile.create({
-//         data: {
-//             user_id: candidate.id,
-//             positive_signals_json: {
-//                 viewed_jobs: faker.helpers.arrayElements(jobs.map(j => j.id), 3),
-//                 liked_skills: faker.helpers.arrayElements(TECH_STACKS, 2)
-//             },
-//             negative_signals_json: {
-//                 disliked_companies: []
-//             },
-//             suppression_rules_json: {}
-//         }
-//     });
+  // 5. Generate Interactions (Swipes & Matches) - Massive scale
+  console.log('🔄 Generating swipes and matches...');
+  let swipeCount = 0;
+  let matchCount = 0;
 
-//     candidates.push(candidate);
-//   }
-//   console.log(`✅ Created ${candidates.length} candidates`);
-
-//   // 5. Create Swipes (Random interactions) - ~500
-//   // Each candidate swipes on some jobs
-//   let swipeCount = 0;
-//   for (const candidate of candidates) {
-//       // Swipe on random 10 jobs
-//       const randomJobs = faker.helpers.arrayElements(jobs, faker.number.int({ min: 5, max: 15 }));
+  for (const candidate of allCandidates) {
+    // Each candidate swipes on 15-30 random jobs
+    const sampleJobs = faker.helpers.arrayElements(allJobs, faker.number.int({ min: 15, max: 30 }));
+    for (const job of sampleJobs) {
+      const direction = faker.helpers.arrayElement([SwipeDirection.left, SwipeDirection.right]);
       
-//       for (const job of randomJobs) {
-//           await prisma.swipe.create({
-//               data: {
-//                   user_id: candidate.id,
-//                   job_id: job.id,
-//                   direction: faker.helpers.arrayElement([SwipeDirection.left, SwipeDirection.right]),
-//                   created_at: faker.date.recent({ days: 30 })
-//               }
-//           });
-//           swipeCount++;
-//       }
-//   }
-//   console.log(`✅ Created ${swipeCount} swipes`);
+      try {
+        await prisma.swipe.create({
+          data: {
+            user_id: candidate.id,
+            job_id: job.id,
+            direction: direction,
+            created_at: faker.date.recent({ days: 14 })
+          }
+        });
+        swipeCount++;
 
-//   // 6. Create Matches (Explicit matches) - ~30
-//   // Pick random candidate-job pairs and make them matches
-//   let matchCount = 0;
-//   for (let i = 0; i < 30; i++) {
-//      const candidate = faker.helpers.arrayElement(candidates);
-//      const job = faker.helpers.arrayElement(jobs);
-     
-//      // Check if match already exists (crudely, just ignore error or be careful)
-//      // To avoid unique constraint error, we can just try/catch or simple check
-//      // Actually, simpler to just rely on unique constraints and `skipDuplicates` if prisma supported it easily here, 
-//      // but prisma mock doesn't. 
-//      // Let's just do a check or ensure uniqueness by set logic if needed.
-//      // For this simple seed, randomized repeats are rare enough or we can catch.
-     
-//      const exists = await prisma.match.findFirst({
-//          where: { candidate_id: candidate.id, job_id: job.id }
-//      });
-     
-//      if (!exists) {
-//          await prisma.match.create({
-//              data: {
-//                  candidate_id: candidate.id,
-//                  job_id: job.id,
-//                  reveal_status: faker.datatype.boolean(),
-//                  explainability_json: {
-//                      reason: "Strong skill overlap",
-//                      score: faker.number.float({ min: 0.8, max: 0.99 })
-//                  },
-//                  created_at: faker.date.recent({ days: 10 })
-//              }
-//          });
-//          matchCount++;
-//      }
-//   }
-//   console.log(`✅ Created ${matchCount} matches`);
+        // If candidate swiped right, maybe recruiter swiped right too (Match!)
+        if (direction === SwipeDirection.right && faker.datatype.boolean(0.2)) {
+           // Create a recruiter swipe for this candidate on this job
+           const company = allCompanies.find(c => c.id === job.company_id);
+           if (company) {
+              await prisma.swipe.create({
+                data: {
+                  user_id: company.recruiter_id,
+                  job_id: job.id,
+                  target_user_id: candidate.id,
+                  direction: SwipeDirection.right,
+                  created_at: faker.date.recent({ days: 10 })
+                } as any
+              });
+              
+              // Create the match
+              await prisma.match.create({
+                data: {
+                  candidate_id: candidate.id,
+                  job_id: job.id,
+                  reveal_status: true,
+                  explainability_json: { 
+                    reason: "Automated match from seed",
+                    score: faker.number.float({ min: 0.85, max: 0.99 })
+                  }
+                }
+              });
+              matchCount++;
 
-//   console.log('✨ Seed completed successfully');
+              // Add a few messages
+              if (faker.datatype.boolean(0.6)) {
+                 await prisma.message.create({
+                   data: {
+                     match_id: (await prisma.match.findFirst({ where: { candidate_id: candidate.id, job_id: job.id } }))!.id,
+                     sender_id: candidate.id,
+                     content: faker.helpers.arrayElement([
+                       "Hey, I'm really interested in this problem statement!",
+                       "Your expectations align perfectly with my background.",
+                       "Can we talk more about the scalability challenges?"
+                     ])
+                   }
+                 });
+              }
+           }
+        }
+      } catch (e) {
+        // Skip duplicates
+      }
+    }
+  }
+
+  console.log(`✅ Seeded ${swipeCount} swipes and ${matchCount} mutual matches.`);
+  console.log('✨ Dummy data injection complete. The UX should now feel populated.');
 }
 
 main()
