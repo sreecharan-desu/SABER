@@ -20,7 +20,7 @@ export const handleOAuthCallbackGET = async (req: Request, res: Response, next: 
     const { code, state } = req.query;
     
     // Redirect to frontend with auth code and state
-    return res.redirect(`${config.frontendUrl}?code=${code}${state ? `&state=${state}` : ''}`);
+    return res.redirect(`${config.frontendUrl}/auth/callback?code=${code}${state ? `&state=${state}` : ''}`);
     
   
   } catch (error) {
