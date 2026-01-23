@@ -174,6 +174,63 @@ export const getRecruiterFeed = async (req: Request, res: Response, next: NextFu
    }
 };
 
+export const getSignalsOfInterest = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const recruiterId = (req.user as any)?.id;
+        
+        // 1. Get my active jobs
+        const myJobs = await prisma.job.findMany({
+            where: { company: { recruiter_id: recruiterId }, active: true },
+            select: { id: true, problem_statement: true }
+        });
+        
+        if (myJobs.length === 0) return res.json({ signals: [] });
+        const myJobIds = myJobs.map(j => j.id);
+
+        // 2. Find Candidates who swiped RIGHT on my jobs
+        // AND I haven't swiped on them yet (prevent duplicates/already processed)
+        // AND exclude those who are already matched.
+        
+        // First, get all swipes where I am the target and direction is right
+        const incomingSwipes = await prisma.swipe.findMany({
+            where: { 
+                job_id: { in: myJobIds }, 
+                direction: 'right',
+                // Filter out candidates I already swiped on
+                user: {
+                    swipes_received: {
+                        none: {
+                            user_id: recruiterId,
+                            job_id: { in: myJobIds }
+                        }
+                    }
+                }
+            },
+            include: {
+                user: {
+                    include: { skills: true }
+                },
+                job: true
+            },
+            orderBy: { created_at: 'desc' }
+        });
+
+        const signals = incomingSwipes.map(s => ({
+            signal_id: s.id,
+            candidate_id: s.user_id,
+            intent_text: s.user.intent_text,
+            skills: s.user.skills,
+            job_id: s.job_id,
+            job_problem: s.job.problem_statement,
+            received_at: s.created_at
+        }));
+
+        res.json({ signals });
+    } catch (err) {
+        next(err);
+    }
+};
+
 export const recruiterSwipe = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const schema = z.object({
@@ -228,3 +285,55 @@ export const recruiterSwipe = async (req: Request, res: Response, next: NextFunc
         next(err);
     }
 }
+
+export const updateJob = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const id = req.params.id as string;
+        const userId = (req.user as any)?.id;
+        const data = req.body;
+
+        // Verify ownership
+        const job = await prisma.job.findFirst({
+            where: { id, company: { recruiter_id: userId } }
+        });
+
+        if (!job) return res.status(404).json({ error: 'Job not found or unauthorized' });
+
+        const updatedJob = await prisma.job.update({
+            where: { id },
+            data: {
+                ...data,
+                constraints_json: data.constraints_json || job.constraints_json,
+                skills_required: data.skills_required || job.skills_required
+            }
+        });
+
+        res.json(updatedJob);
+    } catch (err) {
+        next(err);
+    }
+};
+
+export const deleteJob = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const id = req.params.id as string;
+        const userId = (req.user as any)?.id;
+
+        // Verify ownership
+        const job = await prisma.job.findFirst({
+            where: { id, company: { recruiter_id: userId } }
+        });
+
+        if (!job) return res.status(404).json({ error: 'Job not found or unauthorized' });
+
+        // Soft delete
+        await prisma.job.update({
+            where: { id },
+            data: { active: false }
+        });
+
+        res.json({ success: true, message: 'Job deleted successfully' });
+    } catch (err) {
+        next(err);
+    }
+};

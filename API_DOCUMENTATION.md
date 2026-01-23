@@ -91,11 +91,14 @@ Records a candidate's interest in a job.
 
 ## 🏢 4. Recruiter Flow
 
-### **POST** `/company`
+### **POST** `/recruiters/company`
 Creates a company profile. (Recruiter only)
 - **Body**: `{ "name": "...", "website": "..." }`
 
-### **POST** `/job`
+### **GET** `/recruiters/company`
+Fetches your company profile.
+
+### **POST** `/recruiters/job`
 Creates a new job posting. (Recruiter only)
 - **Body**:
   ```json
@@ -110,11 +113,14 @@ Creates a new job posting. (Recruiter only)
   }
   ```
 
-### **GET** `/recruiter/feed`
+### **GET** `/recruiters/jobs`
+Fetches all jobs created by your company.
+
+### **GET** `/recruiters/recruiter/feed`
 Fetches a list of candidates matching the recruiter's active jobs.
 - **Response**: List of candidates with their `intent_text` and `skills`.
 
-### **POST** `/recruiter/swipe`
+### **POST** `/recruiters/recruiter/swipe`
 Recruiter swiping on a candidate.
 - **Body**: `{ "job_id": "...", "target_user_id": "...", "direction": "left" | "right" }`
 
@@ -150,6 +156,7 @@ These routes require `X-API-KEY` instead of Bearer JWT.
 - **GET** `/ai/data/users`: Bulk fetch candidate data for model training.
 - **GET** `/ai/data/jobs`: Bulk fetch job data.
 - **POST** `/ai/recommendations/update`: Push model predictions (scores/clusters) back to the user profiles.
+- **POST** `/ai/refresh-signals`: Manually trigger a global professional signal refresh (rotates tokens and re-scans GitHub/LinkedIn).
 
 ---
 

@@ -9,7 +9,10 @@ router.post('/company', authenticateJWT, requireRole(['recruiter']), recruiterCo
 router.get('/company', authenticateJWT, requireRole(['recruiter']), recruiterController.getMyCompany);
 router.post('/job', authenticateJWT, requireRole(['recruiter']), recruiterController.createJob);
 router.get('/jobs', authenticateJWT, requireRole(['recruiter']), recruiterController.getMyJobs);
+router.put('/job/:id', authenticateJWT, requireRole(['recruiter']), recruiterController.updateJob);
+router.delete('/job/:id', authenticateJWT, requireRole(['recruiter']), recruiterController.deleteJob);
+router.get('/signals', authenticateJWT, requireRole(['recruiter']), recruiterController.getSignalsOfInterest);
 router.get('/recruiter/feed', authenticateJWT, requireRole(['recruiter']), recruiterController.getRecruiterFeed); 
-router.post('/recruiter/swipe', authenticateJWT, requireRole(['recruiter']), swipeLimiter, recruiterController.recruiterSwipe); // Same
+router.post('/recruiter/swipe', authenticateJWT, requireRole(['recruiter']), swipeLimiter, recruiterController.recruiterSwipe); 
 
 export default router;
