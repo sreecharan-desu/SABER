@@ -1,0 +1,5 @@
+requests
+pandas
+torch
+sentence-transformers
+python-dotenv
