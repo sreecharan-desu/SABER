@@ -3,6 +3,7 @@ import { z } from 'zod';
 import * as oauthProviders from '../services/oauth.providers';
 import * as userService from '../services/user.service';
 import * as githubDataService from '../services/github.data.service';
+import * as linkedinDataService from '../services/linkedin.data.service';
 import { generateToken } from '../utils/jwt';
 import prisma from '../config/prisma';
 
@@ -59,6 +60,9 @@ export const handleOAuthCallback = async (req: Request, res: Response, next: Nex
     if (provider === 'github' && profile.accessToken) {
       githubDataService.extractAndStoreGithubData(user.id, profile.accessToken);
     }
+    if (provider === 'linkedin' && profile.accessToken) {
+      linkedinDataService.extractAndStoreLinkedinData(user.id, profile.accessToken, profile._raw);
+    }
 
     const token = generateToken({ id: user.id, role: user.role });
 
@@ -95,6 +99,9 @@ export const linkProvider = async (req: Request, res: Response, next: NextFuncti
     // Trigger GitHub data extraction in background if available
     if (provider === 'github' && profile.accessToken) {
       githubDataService.extractAndStoreGithubData((req.user as any).id, profile.accessToken);
+    }
+    if (provider === 'linkedin' && profile.accessToken) {
+      linkedinDataService.extractAndStoreLinkedinData((req.user as any).id, profile.accessToken, profile._raw);
     }
     
     res.json({ status: 'ok', message: 'Provider linked successfully' });

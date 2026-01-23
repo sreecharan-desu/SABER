@@ -99,6 +99,7 @@ export const getLinkedinProfile = async (code: string, redirectUri: string): Pro
     email: user.email,
     displayName: user.name,
     photos: user.picture ? [{ value: user.picture }] : [],
+    accessToken,
     _raw: user,
   };
 };
