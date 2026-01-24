@@ -1,7 +1,7 @@
-import { PrismaClient, UserRole, SwipeDirection } from "@prisma/client";
+import { UserRole, SwipeDirection } from "@prisma/client";
 import { faker } from "@faker-js/faker";
-
-const prisma = new PrismaClient();
+import prisma from "../src/config/prisma";
+// Now using encrypted Prisma client - all data will be automatically encrypted!
 
 const TECH_STACKS = [
   "TypeScript",
@@ -254,7 +254,7 @@ async function main() {
         },
       });
       swipeCount++;
-    } catch {}
+    } catch { }
   }
 
   // 50 Applications
@@ -273,7 +273,7 @@ async function main() {
         },
       });
       appCount++;
-    } catch {}
+    } catch { }
   }
 
   // 50 Matches
@@ -293,7 +293,7 @@ async function main() {
       });
       matches.push(match);
       matchCount++;
-    } catch {}
+    } catch { }
   }
 
   // 50 Messages
@@ -319,7 +319,7 @@ async function main() {
           },
         });
         msgCount++;
-      } catch {}
+      } catch { }
     }
   }
 

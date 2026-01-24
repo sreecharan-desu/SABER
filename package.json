@@ -9,7 +9,10 @@
     "build": "prisma generate && tsc",
     "start": "node dist/server.js",
     "postinstall": "prisma generate",
-    "db:clean": "ts-node scripts/db-clean.ts"
+    "db:clean": "ts-node scripts/db-clean.ts",
+    "db:backup": "ts-node scripts/backup-database.ts",
+    "db:reset": "prisma migrate reset --force",
+    "db:fresh": "npm run db:backup && npm run db:reset"
   },
   "keywords": [],
   "author": "",

@@ -7,10 +7,11 @@ const prisma = new PrismaClient().$extends({
             async $allOperations({ model, operation, args, query }: { model: string, operation: string, args: any, query: (args: any) => Promise<any> }) {
                 // 1. Define sensitive fields per model (Refined with new models)
                 const encryptedFieldsMap: Record<string, string[]> = {
-                    User: ['name', 'email', 'intent_text', 'why_text', 'constraints_json'],
+                    User: ['name', 'intent_text', 'why_text', 'constraints_json'],
                     OAuthAccount: ['access_token', 'refresh_token', 'raw_data_json'],
                     Company: ['name', 'website', 'email'],
                     Job: ['problem_statement', 'expectations', 'non_negotiables', 'deal_breakers', 'constraints_json'],
+                    Match: ['explainability_json'],
                     Message: ['content'],
                     Bookmark: ['notes'],
                     Application: ['cover_note'],
@@ -19,27 +20,14 @@ const prisma = new PrismaClient().$extends({
 
                 const sensitiveFields = encryptedFieldsMap[model] || [];
 
-                // 2. Query Rewriting for Search (Blind Index)
-                if (args.where && model === 'User' && args.where.email) {
-                    const emailValue = typeof args.where.email === 'string'
-                        ? args.where.email
-                        : args.where.email.equals;
-
-                    if (emailValue) {
-                        args.where.email_hash = EncryptionService.generateBlindIndex(emailValue);
-                        delete args.where.email;
-                    }
-                }
+                // Email is NOT encrypted - skip blind indexing logic
 
                 // 3. Encryption on WRITE
                 const writeOperations: string[] = ['create', 'update', 'upsert', 'createMany', 'updateMany'];
                 if (writeOperations.includes(operation)) {
                     const encryptData = (data: any) => {
                         if (!data) return data;
-
-                        if (model === 'User' && data.email) {
-                            data.email_hash = EncryptionService.generateBlindIndex(data.email);
-                        }
+                        // Email is NOT encrypted - no blind index needed
 
                         for (const field of sensitiveFields) {
                             if (data[field] !== undefined && data[field] !== null) {
@@ -96,15 +84,30 @@ const prisma = new PrismaClient().$extends({
                             // Map the key to a model name (e.g., 'oauth_accounts' -> 'OAuthAccount')
                             // This is a simple heuristic mapping for SABER's schema
                             const modelMapping: Record<string, string> = {
+                                // Collections
                                 oauth_accounts: 'OAuthAccount',
                                 jobs: 'Job',
-                                company: 'Company',
+                                companies: 'Company',
                                 skills: 'Skill',
                                 swipes: 'Swipe',
+                                swipes_received: 'Swipe',
                                 matches: 'Match',
                                 messages: 'Message',
                                 bookmarks: 'Bookmark',
-                                applications: 'Application'
+                                applications: 'Application',
+                                payments: 'Payment',
+                                sent_messages: 'Message',
+
+                                // Single Relations
+                                user: 'User',
+                                candidate: 'User',
+                                target_user: 'User',
+                                recruiter: 'User',
+                                sender: 'User',
+                                company: 'Company',
+                                job: 'Job',
+                                match: 'Match',
+                                recommendation_profile: 'RecommendationProfile'
                             };
 
                             const nextModel = modelMapping[key];
