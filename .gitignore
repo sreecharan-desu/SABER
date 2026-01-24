@@ -9,3 +9,6 @@ dist
 .env.*
 .env.*
 .env*.local
+
+# Database backups contain sensitive plaintext data
+backups/

@@ -7,7 +7,7 @@ const prisma = new PrismaClient().$extends({
             async $allOperations({ model, operation, args, query }: { model: string, operation: string, args: any, query: (args: any) => Promise<any> }) {
                 // 1. Define sensitive fields per model (Refined with new models)
                 const encryptedFieldsMap: Record<string, string[]> = {
-                    User: ['name', 'email', 'intent_text', 'why_text', 'constraints_json'],
+                    User: ['name', 'intent_text', 'why_text', 'constraints_json'],
                     OAuthAccount: ['access_token', 'refresh_token', 'raw_data_json'],
                     Company: ['name', 'website', 'email'],
                     Job: ['problem_statement', 'expectations', 'non_negotiables', 'deal_breakers', 'constraints_json'],
@@ -20,27 +20,14 @@ const prisma = new PrismaClient().$extends({
 
                 const sensitiveFields = encryptedFieldsMap[model] || [];
 
-                // 2. Query Rewriting for Search (Blind Index)
-                if (args.where && model === 'User' && args.where.email) {
-                    const emailValue = typeof args.where.email === 'string'
-                        ? args.where.email
-                        : args.where.email.equals;
-
-                    if (emailValue) {
-                        args.where.email_hash = EncryptionService.generateBlindIndex(emailValue);
-                        delete args.where.email;
-                    }
-                }
+                // Email is NOT encrypted - skip blind indexing logic
 
                 // 3. Encryption on WRITE
                 const writeOperations: string[] = ['create', 'update', 'upsert', 'createMany', 'updateMany'];
                 if (writeOperations.includes(operation)) {
                     const encryptData = (data: any) => {
                         if (!data) return data;
-
-                        if (model === 'User' && data.email) {
-                            data.email_hash = EncryptionService.generateBlindIndex(data.email);
-                        }
+                        // Email is NOT encrypted - no blind index needed
 
                         for (const field of sensitiveFields) {
                             if (data[field] !== undefined && data[field] !== null) {
