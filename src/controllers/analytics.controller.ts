@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
+import { getCache, setCache } from "../utils/cache";
 
 // ==========================================
 // CANDIDATE ANALYTICS
@@ -11,6 +12,11 @@ export const getCandidateAnalytics = async (
 ) => {
   try {
     const userId = (req.user as any)?.id;
+
+    // Check Cache first
+    const cacheKey = `analytics_candidate_${userId}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return res.json(cached);
 
     const [
       matchesCount,
@@ -44,14 +50,12 @@ export const getCandidateAnalytics = async (
       }),
 
       // 5. Profile Views (Swipes received from recruiters)
-      // A recruiter swiping 'right' or 'left' on a candidate counts as a view.
-      // Ideally we should have a 'View' model but this is a good proxy.
       prisma.swipe.count({
         where: { target_user_id: userId },
       }),
     ]);
 
-    res.json({
+    const result = {
       total_matches: matchesCount,
       total_applications: applicationsCount,
       applications_breakdown: applicationStats.map((s) => ({
@@ -60,7 +64,11 @@ export const getCandidateAnalytics = async (
       })),
       swipes_made: swipesCount,
       profile_views: profileViews,
-    });
+    };
+
+    await setCache(cacheKey, result, 300);
+
+    res.json(result);
   } catch (err) {
     next(err);
   }
@@ -77,6 +85,11 @@ export const getRecruiterAnalytics = async (
   try {
     const recruiterId = (req.user as any)?.id;
 
+    // Check Cache first
+    const cacheKey = `analytics_recruiter_${recruiterId}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return res.json(cached);
+
     // Get all jobs managed by this recruiter
     const jobs = await prisma.job.findMany({
       where: { company: { recruiter_id: recruiterId } },
@@ -89,7 +102,7 @@ export const getRecruiterAnalytics = async (
         active_jobs: 0,
         total_applications: 0,
         total_matches: 0,
-        profile_views: 0,
+        total_views: 0,
         pipeline: [],
       });
     }
@@ -129,16 +142,20 @@ export const getRecruiterAnalytics = async (
       }),
     ]);
 
-    res.json({
+    const result = {
       active_jobs: activeJobsCount,
       total_applications: totalApplications,
       total_matches: totalMatches,
-      total_views: totalViews, // Total candidates who saw/swiped on the jobs
+      total_views: totalViews,
       pipeline: applicationStats.map((s) => ({
         status: s.status,
         count: s._count.status,
       })),
-    });
+    };
+
+    await setCache(cacheKey, result, 300); // Cache for 5 minutes
+
+    res.json(result);
   } catch (err) {
     next(err);
   }
