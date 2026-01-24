@@ -9,9 +9,7 @@
     "build": "prisma generate && tsc",
     "start": "node dist/server.js",
     "postinstall": "prisma generate",
-    "db:clean": "ts-node scripts/db-clean.ts",
-    "db:export": "ts-node scripts/get-all-data.ts",
-    "db:cleanup": "ts-node scripts/cleanup-users.ts"
+    "db:clean": "ts-node scripts/db-clean.ts"
   },
   "keywords": [],
   "author": "",
