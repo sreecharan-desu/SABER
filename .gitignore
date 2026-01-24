@@ -8,3 +8,5 @@ dist
 .vercel
 .env.*
 .env*.local
+db_export.json
+.env.vercel.tmp
